@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>ফিজিক্স ২য় অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question:
+            "সূর্যের মধ্যে ফিউশন বিক্রিয়ায় হাইড্রোজেন থেকে কোনটি তৈরি হয়?",
+          options: {
+            a: "নিয়ন",
+            b: "হিলিয়াম",
+            c: "অক্সিজেন",
+            d: "নাইট্রোজেন",
+          },
+          correct: "b",
+          explanation:
+            "<p>সূর্য এবং অন্যান্য নক্ষত্রের শক্তির উৎস হলো নিউক্লিয়ার ফিউশন বিক্রিয়া। এই প্রক্রিয়ায় সূর্যের কেন্দ্রে উচ্চ তাপমাত্রা ও চাপে চারটি হাইড্রোজেন পরমাণু একত্রিত হয়ে একটি হিলিয়াম পরমাণু তৈরি করে এবং বিপুল পরিমাণে শক্তি নির্গত হয়।</p>",
+        },
+        {
+          id: 2,
+          question: "মহাবিশ্বে নিচের কোনটির পরিমাণ সবচেয়ে বেশি?",
+          options: {
+            a: "ডার্ক এনার্জি",
+            b: "নীহারিকা",
+            c: "কৃষ্ণ গহ্বর",
+            d: "গ্যালাক্সি",
+          },
+          correct: "a",
+          explanation:
+            "<p>মহাবিশ্বের মোট ভর ও শক্তির প্রায় ৬৮% হলো ডার্ক এনার্জি (Dark Energy)। এটি মহাবিশ্বের প্রসারণকে ত্বরান্বিত করার জন্য দায়ী বলে মনে করা হয়। সাধারণ দৃশ্যমান পদার্থের পরিমাণ মাত্র প্রায় ৫%।</p>",
+        },
+        {
+          id: 3,
+          question: "আমরা যে গ্যালাক্সিতে বাস করি এতে নক্ষত্রের সংখ্যা কত?",
+          options: {
+            a: "10<sup>10</sup>",
+            b: "10<sup>11</sup>",
+            c: "10<sup>12</sup>",
+            d: "10<sup>13</sup>",
+          },
+          correct: "b",
+          explanation:
+            "<p>আমরা যে গ্যালাক্সিতে বাস করি তার নাম আকাশগঙ্গা বা মিল্কি ওয়ে। এই গ্যালাক্সিতে প্রায় ১০০ বিলিয়ন থেকে ৪০০ বিলিয়ন (10<sup>11</sup> থেকে 4 × 10<sup>11</sup>) নক্ষত্র রয়েছে বলে অনুমান করা হয়।</p>",
+        },
+        {
+          id: 4,
+          question:
+            "গ্রহাণু কোন দুটি গ্রহের কক্ষপথের মাঝ দিয়ে সূর্যকে প্রদক্ষিণ করে?",
+          options: {
+            a: "মঙ্গল ও শনি",
+            b: "বুধ ও শুক্র",
+            c: "বৃহস্পতি ও শনি",
+            d: "মঙ্গল ও বৃহস্পতি",
+          },
+          correct: "d",
+          explanation:
+            "<p>গ্রহাণুগুলো প্রধানত <b>মঙ্গল (Mars)</b> এবং <b>বৃহস্পতি (Jupiter)</b> গ্রহের কক্ষপথের মাঝখানে একটি নির্দিষ্ট অঞ্চলে সূর্যকে প্রদক্ষিণ করে, যা গ্রহাণু বেষ্টনী (Asteroid Belt) নামে পরিচিত।</p>",
+        },
+        {
+          id: 5,
+          question: "সূর্য নক্ষত্রে কোন ধরনের বিক্রিয়ায় আলো নিঃসারিত হয়?",
+          options: {
+            a: "তাপ নিউক্লিয়ার",
+            b: "তাপ",
+            c: "নিউক্লিয়ার",
+            d: "কোনোটিই নয়",
+          },
+          correct: "a",
+          explanation:
+            "<p>সূর্যের কেন্দ্রস্থলের অতি উচ্চ তাপমাত্রা ও চাপে হাইড্রোজেন পরমাণুগুলোর মধ্যে নিউক্লিয়ার ফিউশন বিক্রিয়া ঘটে। এই প্রক্রিয়াকে <b>তাপ-নিউক্লিয়ার (Thermo-nuclear)</b> বিক্রিয়া বলা হয়, যা থেকে বিপুল শক্তি ও আলো নির্গত হয়।</p>",
+        },
+        {
+          id: 6,
+          question:
+            "ক্ষুদ্র শিলা খণ্ড পৃথিবীর অভিকর্ষের টানে প্রচণ্ড বেগে বায়ুমণ্ডলে প্রবেশ করে এবং বায়ু কণার সাথে ঘর্ষণের ফলে জ্বলে উঠে, এদেরকে বলা হয়-",
+          options: {
+            a: "ধুমকেতু",
+            b: "উল্কা",
+            c: "কোয়াসার",
+            d: "পালসার",
+          },
+          correct: "b",
+          explanation:
+            "<p>মহাকাশের ক্ষুদ্র শিলা খণ্ডগুলো যখন পৃথিবীর বায়ুমণ্ডলে প্রবেশ করে বায়ুর সাথে ঘর্ষণের ফলে জ্বলে ওঠে, তাদের <b>উল্কা (Meteor)</b> বলা হয়। আমরা এদেরকে 'তারা খসা' নামেও চিনি।</p>",
+        },
+        {
+          id: 7,
+          question: "আমরা যে গ্যালাক্সিতে বাস করি তার নাম-",
+          options: {
+            a: "আকাশ গঙ্গা",
+            b: "পালসার",
+            c: "সৌর জগৎ",
+            d: "সপ্তর্ষিমণ্ডল",
+          },
+          correct: "a",
+          explanation:
+            "<p>আমরা যে গ্যালাক্সিতে বাস করি তার নাম <b>আকাশগঙ্গা (Milky Way)</b>। এটি একটি সর্পিল আকৃতির গ্যালাক্সি, যেখানে আমাদের সৌরজগত অবস্থিত।</p>",
+        },
+        {
+          id: 8,
+          question: "নক্ষত্রের মধ্যবর্তী স্থানে পদার্থ কোন অবস্থায় থাকে?",
+          options: {
+            a: "গ্যাসীয়",
+            b: "প্লাজমা",
+            c: "তরল",
+            d: "কঠিন",
+          },
+          correct: "b",
+          explanation:
+            "<p>নক্ষত্রের অভ্যন্তরে এবং মহাকাশের বিভিন্ন স্থানে যেখানে তাপমাত্রা অত্যন্ত বেশি, সেখানে পদার্থের পরমাণু থেকে ইলেকট্রন বিচ্ছিন্ন হয়ে আয়নিত অবস্থায় থাকে। পদার্থের এই অবস্থাকে <b>প্লাজমা (Plasma)</b> বলে।</p>",
+        },
+        {
+          id: 9,
+          question: "কোন বিক্রিয়ার ফলে নক্ষত্রে শক্তি উৎপন্ন হয়?",
+          options: {
+            a: "ফিশন",
+            b: "ফিউশন",
+            c: "রাসায়নিক",
+            d: "শৃঙ্খল",
+          },
+          correct: "b",
+          explanation:
+            "<p>নক্ষত্রগুলিতে প্রধানত নিউক্লিয়ার <b>ফিউশন (Fusion)</b> বিক্রিয়ার মাধ্যমে শক্তি উৎপন্ন হয়। এই প্রক্রিয়ায় হালকা পারমাণবিক নিউক্লিয়াস (যেমন হাইড্রোজেন) একত্রিত হয়ে ভারী নিউক্লিয়াস (যেমন হিলিয়াম) গঠন করে।</p>",
+        },
+        {
+          id: 10,
+          question: "নীহারিকা গঠনকারী প্রধান উপাদানদ্বয় হচ্ছে-",
+          options: {
+            a: "হাইড্রোজেন ও হিলিয়াম",
+            b: "হাইড্রোজেন ও জলীয় বাষ্প",
+            c: "হাইড্রোজেন ও অক্সিজেন",
+            d: "অক্সিজেন ও হিলিয়াম",
+          },
+          correct: "a",
+          explanation:
+            "<p>নীহারিকা (Nebula) হলো মহাকাশে বিদ্যমান ধুলো ও গ্যাসের বিশাল মেঘ, যা প্রধানত <b>হাইড্রোজেন ও হিলিয়াম</b> দ্বারা গঠিত। এই নীহারিকা থেকেই নতুন নক্ষত্র ও গ্রহের জন্ম হয়।</p>",
+        },
+        {
+          id: 11,
+          question: "এই মহাবিশ্বের মৌলিক উপাদান কয়টি?",
+          options: {
+            a: "2",
+            b: "3",
+            c: "4",
+            d: "5",
+          },
+          correct: "b",
+          explanation:
+            "<p>আধুনিক জ্যোতির্বিজ্ঞান অনুসারে, মহাবিশ্বের প্রধান মৌলিক উপাদান তিনটি: <b>সাধারণ পদার্থ (Ordinary Matter)</b>, <b>গুপ্ত পদার্থ (Dark Matter)</b> এবং <b>গুপ্ত শক্তি (Dark Energy)</b>।</p>",
+        },
+        {
+          id: 12,
+          question: "কোনটি নক্ষত্রের মূল জ্বালানি?",
+          options: {
+            a: "অক্সিজেন",
+            b: "হিলিয়াম",
+            c: "কার্বন",
+            d: "হাইড্রোজেন",
+          },
+          correct: "d",
+          explanation:
+            "<p>নক্ষত্রের মূল জ্বালানি হলো <b>হাইড্রোজেন</b>। নক্ষত্রের কেন্দ্রে হাইড্রোজেনের ফিউশন প্রক্রিয়ার মাধ্যমে হিলিয়াম তৈরি হয় এবং বিপুল পরিমাণ শক্তি নির্গত হয়।</p>",
+        },
+        {
+          id: 13,
+          question:
+            "সূর্য নিরবচ্ছিন্নভাবে শক্তি বিকিরণ করে এবং এর ঔজ্জ্বল্য বজায় রাখে তার কারণ কী?",
+          options: {
+            a: "এতে হিলিয়ামের ফিশান ঘটে হাইড্রোজেন তৈরি হয়",
+            b: "এর মজ্জায় কার্বনের দহন ঘটে",
+            c: "এর মধ্যে রাসায়নিক বিক্রিয়া সংঘটিত হয়",
+            d: "এতে হাইড্রোজেন ফিউশনিত হয়ে হিলিয়াম তৈরি হয়",
+          },
+          correct: "d",
+          explanation:
+            "<p>সূর্য নিরবচ্ছিন্নভাবে শক্তি বিকিরণ করে কারণ এর কেন্দ্রে উচ্চ তাপে ও চাপে <b>হাইড্রোজেন নিউক্লিয়াসগুলো ফিউশন প্রক্রিয়ার মাধ্যমে হিলিয়াম নিউক্লিয়াসে রূপান্তরিত হয়</b>, যা থেকে প্রচুর শক্তি নির্গত হয়।</p>",
+        },
+        {
+          id: 14,
+          question: "আমরা যে গ্যালাক্সিতে বাস করি তা কোনটি?",
+          options: {
+            a: "একটি সর্পিল গ্যালাক্সি",
+            b: "রেডিও গ্যালাক্সি",
+            c: "অনিয়মিত গ্যালাক্সি",
+            d: "উপরের কোনোটিই নয়",
+          },
+          correct: "a",
+          explanation:
+            "<p>আমরা যে গ্যালাক্সিতে বাস করি, সেই আকাশগঙ্গা বা মিল্কি ওয়ে হলো একটি <b>সর্পিল (spiral) গ্যালাক্সি</b>।</p>",
+        },
+        {
+          id: 15,
+          question: "একটি তারার বর্ণ নির্দেশ করে তার-",
+          options: {
+            a: "ওজন",
+            b: "আকার",
+            c: "দূরত্ব",
+            d: "তাপমাত্রা",
+          },
+          correct: "d",
+          explanation:
+            "<p>একটি তারার বর্ণ তার পৃষ্ঠের <b>তাপমাত্রা</b> নির্দেশ করে। উষ্ণতর তারাগুলো নীল বা সাদা এবং শীতলতর তারাগুলো লাল বা কমলা রঙের হয়।</p>",
+        },
+        {
+          id: 16,
+          question: "তারকার জ্বালানি-",
+          options: {
+            a: "হাইড্রোজেন",
+            b: "নাইট্রোজেন",
+            c: "অক্সিজেন",
+            d: "কোনোটিই নয়",
+          },
+          correct: "a",
+          explanation: "<p>তারকার প্রধান জ্বালানি হলো <b>হাইড্রোজেন</b>।</p>",
+        },
+        {
+          id: 17,
+          question: "সূর্যের আয়ুষ্কাল আনুমানিক-",
+          options: {
+            a: "10<sup>15</sup> বছর",
+            b: "10<sup>10</sup> বছর",
+            c: "10<sup>20</sup> বছর",
+            d: "10<sup>30</sup> বছর",
+          },
+          correct: "b",
+          explanation:
+            "<p>সূর্যের মোট আয়ুষ্কাল প্রায় ১০ বিলিয়ন (<b>10<sup>10</sup></b>) বছর বলে অনুমান করা হয়। সূর্য বর্তমানে তার জীবনের প্রায় অর্ধেক সময় পার করেছে।</p>",
+        },
+        {
+          id: 18,
+          question:
+            "সূর্যকে কেন্দ্র করে প্রদক্ষিণরত বস্তুগুলোকে কয়টি ভাগে ভাগ করা হয়?",
+          options: {
+            a: "দুটি",
+            b: "তিনটি",
+            c: "চারটি",
+            d: "ছয়টি",
+          },
+          correct: "c",
+          explanation:
+            "<p>সূর্যকে কেন্দ্র করে প্রদক্ষিণরত বস্তুগুলোকে প্রধানত চারটি ভাগে ভাগ করা হয়: ১. গ্রহ, ২. বামন গ্রহ, ৩. গ্রহাণু এবং ৪. ধূমকেতু ও কুইপার বেল্টের বস্তু।</p>",
+        },
+        {
+          id: 19,
+          question: "আগুনের গোলার মত পৃথিবীর দিকে ধেয়ে আসা বস্তুটিকে কী বলে?",
+          options: {
+            a: "উল্কা",
+            b: "গ্রহাণু",
+            c: "ধুমকেতু",
+            d: "ছায়াপথ",
+          },
+          correct: "a",
+          explanation:
+            "<p>আগুনের গোলার মতো পৃথিবীর দিকে ধেয়ে আসা বস্তুকে <b>উল্কা (Meteor)</b> বলা হয়। এটি পৃথিবীর বায়ুমণ্ডলে প্রবেশ করলে বায়ুর সাথে ঘর্ষণের ফলে জ্বলে ওঠে।</p>",
+        },
+        {
+          id: 20,
+          question:
+            "মহাকাশে বস্তু পুঞ্জের সমন্বয়ে গঠিত বড় বড় দলগুলোকে কী বলে?",
+          options: {
+            a: "গ্যালাক্সি",
+            b: "নীহারিকা",
+            c: "ধুমকেতু",
+            d: "নক্ষত্র",
+          },
+          correct: "a",
+          explanation:
+            "<p>মহাকাশে শত শত বিলিয়ন নক্ষত্র, গ্যাস, ধুলো এবং গুপ্ত পদার্থের সমন্বয়ে গঠিত বিশাল দলগুলোকে <b>গ্যালাক্সি (Galaxy)</b> বলা হয়।</p>",
+        },
+        {
+          id: 21,
+          question: "আকাশ গঙ্গা-",
+          options: {
+            a: "একটি নীহারিকার নাম",
+            b: "আমাদের গ্যালাক্সির নাম",
+            c: "একটি নক্ষত্রের নাম",
+            d: "একটি কৃষ্ণ বিবরের নাম",
+          },
+          correct: "b",
+          explanation:
+            "<p>আকাশগঙ্গা (Milky Way) হলো <b>আমাদের গ্যালাক্সির নাম</b>, যেখানে আমাদের সৌরজগত অবস্থিত।</p>",
+        },
+        {
+          id: 22,
+          question:
+            "তাত্ত্বিকভাবে নির্ধারিত কিন্তু সরাসরি পর্যবেক্ষিত নয় এরূপ পদার্থকে কী বলে?",
+          options: {
+            a: "কৃষ্ণ বিবর",
+            b: "গুপ্ত পদার্থ",
+            c: "নিহারীকা",
+            d: "কোয়াসার",
+          },
+          correct: "b",
+          explanation:
+            "<p><b>গুপ্ত পদার্থ (Dark Matter)</b> হলো এক ধরনের পদার্থ যা সরাসরি পর্যবেক্ষণ করা যায় না, কারণ এটি আলো শোষণ বা নির্গমন করে না। এর অস্তিত্ব শুধুমাত্র মহাকর্ষীয় প্রভাব থেকে অনুমান করা হয়।</p>",
+        },
+        {
+          id: 23,
+          question: "গুপ্ত পদার্থ মোট পদার্থের কত অংশ?",
+          options: {
+            a: "83%",
+            b: "73%",
+            c: "23%",
+            d: "8%",
+          },
+          correct: "a",
+          explanation:
+            "<p>মহাবিশ্বের মোট পদার্থের (সাধারণ পদার্থ + গুপ্ত পদার্থ) প্রায় ৮৪% হলো গুপ্ত পদার্থ (Dark Matter)। সাধারণ দৃশ্যমান পদার্থ মাত্র ১৬%।</p>",
+        },
+        {
+          id: 24,
+          question: "কোন দুটি গ্রহের কোনো উপগ্রহ নেই?",
+          options: {
+            a: "মঙ্গল ও শনি",
+            b: "বুধ ও শুক্র",
+            c: "বৃহস্পতি ও শনি",
+            d: "মঙ্গল ও বৃহস্পতি",
+          },
+          correct: "b",
+          explanation:
+            "<p>সৌরজগতের আটটি গ্রহের মধ্যে <b>বুধ (Mercury)</b> এবং <b>শুক্র (Venus)</b> এই দুটি গ্রহের কোনো প্রাকৃতিক উপগ্রহ নেই।</p>",
+        },
+        {
+          id: 25,
+          question:
+            "রাতের আকাশে অসংখ্য ক্ষুদ্র ক্ষুদ্র উজ্জ্বল বস্তুকে মিটমিট করে জ্বলতে দেখি। এগুলোকে কী বলে?",
+          options: {
+            a: "উল্কা",
+            b: "নীহারিকা",
+            c: "ধুমকেতু",
+            d: "নক্ষত্র",
+          },
+          correct: "d",
+          explanation:
+            "<p>রাতের আকাশে যে উজ্জ্বল বস্তুগুলোকে মিটমিট করে জ্বলতে দেখা যায়, সেগুলো হলো <b>নক্ষত্র (Stars)</b>। পৃথিবীর বায়ুমণ্ডলের মধ্যে দিয়ে আসার সময় তাদের আলো বিচ্যুত হয় বলে মিটমিট করে।</p>",
+        },
+        {
+          id: 26,
+          question: "কোন চারটি গ্রহকে পার্থিব গ্রহ বলে?",
+          options: {
+            a: "বুধ, শুক্র, পৃথিবী ও বৃহস্পতি",
+            b: "বুধ, শুক্র, পৃথিবী ও শনি",
+            c: "বুধ, শুক্র, পৃথিবী ও মঙ্গল",
+            d: "বুধ, শনি, পৃথিবী ও মঙ্গল",
+          },
+          correct: "c",
+          explanation:
+            "<p>সৌরজগতের অভ্যন্তরীণ চারটি গ্রহ - <b>বুধ, শুক্র, পৃথিবী এবং মঙ্গল</b> - কে পার্থিব গ্রহ (Terrestrial Planets) বলা হয়। এগুলো প্রধানত শিলা ও ধাতু দিয়ে গঠিত।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                            <label class="option" data-option="${option}">
+                                            <div class="circle">${option}</div>
+                                            <span class="option-text">${question.options[option]}</span>
+                                            </label>`;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                                                                                     <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                                                                                     <div class="explanation-content">
+                                                                                                       <div class="explanation-label">ব্যাখ্যা:</div>
+                                                                                                       ${question.explanation}
+                                                                                                     </div>
+                                                                                                   </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                                                                                <p class="question-label">${
+                                                                                                  index +
+                                                                                                  1
+                                                                                                }. ${
+            question.question
+          }</p>
+                                                                                                <div class="options">
+                                                                                                  ${optionsHTML}
+                                                                                                </div>
+                                                                                                ${explanationHTML}
+                                                                                              `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
